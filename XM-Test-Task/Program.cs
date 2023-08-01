@@ -1,3 +1,8 @@
+using System.Reflection;
+using Microsoft.EntityFrameworkCore;
+using XM_Test_Task.BitcoinPricesFetch.ExternalPriceSources;
+using XM_Test_Task.Database;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -6,6 +11,21 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddDbContext<PriceFetchDbContext>
+    (o => o.UseInMemoryDatabase("PriceFetchInMemory"));
+
+builder.Services.AddScoped<DbContext, PriceFetchDbContext>();
+
+Assembly.GetEntryAssembly()
+    ?.GetTypes()
+    .Where(t => typeof(IExternalPriceSource).IsAssignableFrom(t))
+    .Where(t => t is { IsInterface: false, IsAbstract: false })
+    .ToList()
+    .ForEach(t =>
+    {
+        builder.Services.AddScoped(typeof(IExternalPriceSource), t);
+    });
 
 var app = builder.Build();
 
@@ -17,8 +37,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-app.UseAuthorization();
 
 app.MapControllers();
 
