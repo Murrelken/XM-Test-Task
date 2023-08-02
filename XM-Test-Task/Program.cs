@@ -23,10 +23,7 @@ Assembly.GetEntryAssembly()
     .Where(t => typeof(IExternalPriceSource).IsAssignableFrom(t))
     .Where(t => t is { IsInterface: false, IsAbstract: false })
     .ToList()
-    .ForEach(t =>
-    {
-        builder.Services.AddScoped(typeof(IExternalPriceSource), t);
-    });
+    .ForEach(t => { builder.Services.AddScoped(typeof(IExternalPriceSource), t); });
 
 builder.Services.AddScoped<GetBitcoinPriceBySpecificTimeHandler>();
 builder.Services.AddScoped<GetBitcoinPricesByRangeFromDatabaseHandler>();
@@ -34,12 +31,9 @@ builder.Services.AddScoped<IAggregateBitcoinPricesFromExternalSources, AverageBi
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 app.UseHttpsRedirection();
 
