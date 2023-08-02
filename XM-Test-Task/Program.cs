@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using XM_Test_Task.BitcoinPricesFetch.ExternalPriceSources;
+using XM_Test_Task.BitcoinPricesFetch.Handlers;
 using XM_Test_Task.Database;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,6 +27,10 @@ Assembly.GetEntryAssembly()
     {
         builder.Services.AddScoped(typeof(IExternalPriceSource), t);
     });
+
+builder.Services.AddScoped<GetBitcoinPriceBySpecificTimeHandler>();
+builder.Services.AddScoped<GetBitcoinPricesByRangeFromDatabaseHandler>();
+builder.Services.AddScoped<IAggregateBitcoinPricesFromExternalSources, AverageBitcoinPriceFromExternalSources>();
 
 var app = builder.Build();
 

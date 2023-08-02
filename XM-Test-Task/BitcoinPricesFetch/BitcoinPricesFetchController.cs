@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using XM_Test_Task.BitcoinPricesFetch.Entities;
-using XM_Test_Task.BitcoinPricesFetch.ExternalPriceSources;
+using XM_Test_Task.BitcoinPricesFetch.Dtos;
+using XM_Test_Task.BitcoinPricesFetch.Handlers;
 
 namespace XM_Test_Task.BitcoinPricesFetch;
 
@@ -9,44 +8,21 @@ namespace XM_Test_Task.BitcoinPricesFetch;
 [Route("[controller]/[action]")]
 public class BitcoinPricesFetchController : ControllerBase
 {
-    private readonly IEnumerable<IExternalPriceSource> _externalPriceSources;
-    private readonly DbContext _dbContext;
-
-    public BitcoinPricesFetchController(IEnumerable<IExternalPriceSource> externalPriceSources, DbContext dbContext)
+    [HttpGet("{ticks}")]
+    public async Task<ActionResult<decimal>> GetBySpecificTime(
+        [FromServices] GetBitcoinPriceBySpecificTimeHandler getBitcoinPriceBySpecificTimeHandler,
+        long ticks, CancellationToken ct)
     {
-        _externalPriceSources = externalPriceSources;
-        _dbContext = dbContext;
+        var price = await getBitcoinPriceBySpecificTimeHandler.Get(ticks, ct);
+        return Ok(price);
     }
 
-    [HttpGet("{ticks}")]
-    public async Task<IActionResult> GetBySpecificTime(long ticks)
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<BitcoinPricesDto>>> GetByRange(
+        [FromServices] GetBitcoinPricesByRangeFromDatabaseHandler getBitcoinPricesByRangeFromDatabaseHandler,
+        [FromQuery] GetBitcoinPricesByRangeQuery query, CancellationToken ct)
     {
-        var ticksTrimmedToHours = ticks / 3600;
-
-        var existingPriceInDatabase = await _dbContext
-            .Set<BitcoinPriceByHour>()
-            .FirstOrDefaultAsync(x => x.Hours == ticksTrimmedToHours);
-
-        if (existingPriceInDatabase is null)
-        {
-            var prices = new List<decimal>();
-            using HttpClient client = new();
-            foreach (var formattedPriceSource in _externalPriceSources)
-            {
-                var uri = formattedPriceSource.GetRequestUri(ticks, ticks, 1);
-                var response = await client.GetStringAsync(uri);
-                var result = formattedPriceSource.GetPricesFromRawResponse(response);
-                prices.Add(result[0]);
-            }
-
-            var aggregated = prices.Sum() / prices.Count;
-
-            existingPriceInDatabase = new BitcoinPriceByHour(ticksTrimmedToHours, aggregated);
-
-            _dbContext.Add(existingPriceInDatabase);
-            await _dbContext.SaveChangesAsync();
-        }
-
-        return Ok(existingPriceInDatabase);
+        var prices = await getBitcoinPricesByRangeFromDatabaseHandler.Get(query, ct);
+        return Ok(prices);
     }
 }
