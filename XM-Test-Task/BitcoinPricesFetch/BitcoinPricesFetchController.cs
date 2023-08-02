@@ -8,6 +8,10 @@ namespace XM_Test_Task.BitcoinPricesFetch;
 [Route("[controller]/[action]")]
 public class BitcoinPricesFetchController : ControllerBase
 {
+    /// <summary>
+    /// Getting aggregated btc-usd price by specific time point
+    /// </summary>
+    /// <param name="ticks">The Unix epoch format</param>
     [HttpGet("{ticks}")]
     public async Task<ActionResult<decimal>> GetBySpecificTime(
         [FromServices] GetBitcoinPriceBySpecificTimeHandler getBitcoinPriceBySpecificTimeHandler,
@@ -17,6 +21,9 @@ public class BitcoinPricesFetchController : ControllerBase
         return Ok(price);
     }
 
+    /// <summary>
+    /// Getting a list of btc-usd prices from data storage by given time range
+    /// </summary>
     [HttpGet]
     public async Task<ActionResult<IEnumerable<BitcoinPricesDto>>> GetByRange(
         [FromServices] GetBitcoinPricesByRangeFromDatabaseHandler getBitcoinPricesByRangeFromDatabaseHandler,
